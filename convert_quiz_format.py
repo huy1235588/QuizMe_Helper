@@ -85,7 +85,7 @@ def convert_format_json():
     data_dir = Path("data")
     input_path = data_dir / "json" / "input.json"
     output_path = data_dir / "json" / "converted_format.json"
-    source_image_dir = data_dir / "image" / "Geography_1" / "Flags of World Quiz_1"
+    source_image_dir = data_dir / "image" / "3_science & nature" / "1_Animals"
 
     # Đọc dữ liệu đầu vào
     input_data = load_json_file(input_path)
