@@ -147,7 +147,7 @@ def adjust_quiz_ids(file_path, new_start_question_id, new_start_option_id):
 
 if __name__ == "__main__":
     # Thư mục chứa các file JSON
-    directory_path = os.path.join("data", "json", "quiz", "geography")
+    directory_path = os.path.join("data", "json", "quiz", "7_sports")
 
     # Lấy tất cả file JSON trong thư mục
     json_files = [f for f in os.listdir(directory_path) if f.endswith(".json")]

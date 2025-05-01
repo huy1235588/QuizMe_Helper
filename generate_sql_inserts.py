@@ -140,18 +140,19 @@ def main():
     os.makedirs(output_directory, exist_ok=True)
 
     # Xử lý tất cả các file JSON trong thư mục
-    # for filename in os.listdir(json_directory):
-    #     if filename.endswith('.json'):
-    filename = "1_geography.json"
-    json_path = os.path.join(json_directory, filename)
-    output_name = f"{os.path.splitext(filename)[0]}_inserts.sql"
-    output_path = os.path.join(output_directory, output_name)
+    for filename in os.listdir(json_directory):
+        # Kiểm tra file json và khác rỗng
+        if filename.endswith('.json') and os.path.getsize(os.path.join(json_directory, filename)) > 0:
+            print(f"Đang xử lý {filename}...")
+            json_path = os.path.join(json_directory, filename)
+            output_name = f"{os.path.splitext(filename)[0]}_inserts.sql"
+            output_path = os.path.join(output_directory, output_name)
 
-    print(f"Đang xử lý {json_path}...")
-    json_data = load_json(json_path)
-    sql_content = generate_inserts(json_data)
-    save_sql(sql_content, output_path)
-    print(f"Đã lưu SQL inserts vào {output_path}")
+            print(f"Đang xử lý {json_path}...")
+            json_data = load_json(json_path)
+            sql_content = generate_inserts(json_data)
+            save_sql(sql_content, output_path)
+            print(f"Đã lưu SQL inserts vào {output_path}")
 
 
 if __name__ == "__main__":
