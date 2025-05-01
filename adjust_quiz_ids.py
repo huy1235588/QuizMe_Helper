@@ -184,7 +184,7 @@ if __name__ == "__main__":
                     f"File tiếp theo sẽ bắt đầu với ID câu hỏi: {question_id}, ID lựa chọn: {option_id}"
                 )
 
-        output_file = os.path.join(directory_path, f"merged_{os.path.basename(directory_path)}_quizzes.json")
+        output_file = os.path.join(os.path.dirname(directory_path), f"merged_{os.path.basename(directory_path)}_quizzes.json")
         merged_file = merge_quiz_jsons(directory_path, output_file)
         if merged_file:
             print(f"Đã hoàn tất quá trình gộp file.")
