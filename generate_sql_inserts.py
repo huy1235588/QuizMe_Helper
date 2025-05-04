@@ -33,7 +33,7 @@ VALUES ({category['id']},
     for quiz in json_data.get("quizzes", []):
         # Insert quiz
         quiz_insert = f"""
-INSERT INTO quiz (id, title, description, quiz_thumbnails, creator_id, difficulty, is_public, play_count, question_count)
+INSERT INTO quiz (id, title, description, quiz_thumbnails, creator_id, difficulty, is_public, play_count, question_count, favorite_count)
 VALUES ({quiz['id']}, 
         '{quiz['title'].replace("'", "''")}', 
         '{quiz['description'].replace("'", "''")}', 
@@ -42,7 +42,8 @@ VALUES ({quiz['id']},
         '{quiz['difficulty']}', 
         {str(quiz['is_public']).lower()}, 
         {quiz['play_count']}, 
-        {quiz['question_count']});
+        {quiz['question_count']},
+        {quiz['favorite_count']});
 """
         sql_statements.append(quiz_insert)
 
@@ -130,6 +131,24 @@ def save_sql(sql_content, output_path):
         file.write(sql_content)
 
 
+def merge_sql_files(input_directory, output_file):
+    """Merge multiple SQL files into a single SQL file."""
+    # Get the absolute path of the output file
+    output_path = os.path.abspath(output_file)
+
+    with open(output_file, "w", encoding="utf-8") as outfile:
+        for filename in os.listdir(input_directory):
+            if filename.endswith(".sql"):
+                file_path = os.path.join(input_directory, filename)
+                # Skip the output file if it's in the same directory
+                if os.path.abspath(file_path) == output_path:
+                    continue
+
+                with open(file_path, "r", encoding="utf-8") as infile:
+                    outfile.write(infile.read())
+                    # outfile.write("\n")  # Add a newline between files
+
+
 def main():
     """Hàm chính để xử lý việc tạo các câu lệnh SQL từ các file JSON."""
     # Xác định đường dẫn
@@ -142,7 +161,10 @@ def main():
     # Xử lý tất cả các file JSON trong thư mục
     for filename in os.listdir(json_directory):
         # Kiểm tra file json và khác rỗng
-        if filename.endswith('.json') and os.path.getsize(os.path.join(json_directory, filename)) > 0:
+        if (
+            filename.endswith(".json")
+            and os.path.getsize(os.path.join(json_directory, filename)) > 0
+        ):
             print(f"Đang xử lý {filename}...")
             json_path = os.path.join(json_directory, filename)
             output_name = f"{os.path.splitext(filename)[0]}_inserts.sql"
@@ -153,6 +175,11 @@ def main():
             sql_content = generate_inserts(json_data)
             save_sql(sql_content, output_path)
             print(f"Đã lưu SQL inserts vào {output_path}")
+
+    # Gộp tất cả các file SQL lại thành một file duy nhất
+    merged_output_file = os.path.join(output_directory, "merged_sql.sql")
+    merge_sql_files(output_directory, merged_output_file)
+    print(f"Gộp tất cả các file SQL vào {merged_output_file}")
 
 
 if __name__ == "__main__":

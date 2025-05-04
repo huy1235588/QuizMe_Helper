@@ -81,11 +81,11 @@ def rename_quiz_files(folder_path, old_x, new_x, rename_folder=False):
 
 if __name__ == "__main__":
     # Thư mục chứa các file quiz
-    folder_path = "data/json/quiz/4_science_nature"  
+    folder_path = "data/image/7_sports/56_Guess Soccer Players By Picture"  
 
     # Nhập giá trị x cũ và x mới
     old_x = 1
-    new_x = 16
+    new_x = 56
     
     # Đổi tên cả thư mục nếu cần
     rename_folder = False
