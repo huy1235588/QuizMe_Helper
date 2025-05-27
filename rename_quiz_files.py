@@ -2,7 +2,7 @@ import os
 import re
 import time
 
-def rename_quiz_files(folder_path, old_x, new_x, old_z=None, new_z=None, rename_folder=False, same_z_for_all=False):
+def rename_quiz_files(folder_path, old_x, new_x, old_z=None, new_z=None, rename_folder=False, same_z_for_all=False, start_y=None):
     """
     Đổi tên các file có dạng quiz_x_question_y_z hoặc quiz_thumbnail_x_z 
     thành quiz_new_x_question_y_z hoặc quiz_thumbnail_new_x_z
@@ -16,9 +16,13 @@ def rename_quiz_files(folder_path, old_x, new_x, old_z=None, new_z=None, rename_
         new_z: Chuỗi z mới (nếu cần thay đổi)
         rename_folder: Có đổi tên thư mục hay không
         same_z_for_all: Sử dụng cùng một z cho tất cả file
+        start_y: Số bắt đầu cho y (nếu None thì giữ nguyên y cũ)
     """
     # Thống kê số lượng file đã đổi tên
     renamed_count = 0
+    
+    # Nếu có start_y, cần thu thập tất cả file question để sắp xếp
+    question_files = []
     
     # Mẫu regex để tìm các file dạng quiz_x_question_y_z
     pattern_question = re.compile(f"quiz_{old_x}_question_(\d+)_(.+)")
@@ -26,13 +30,38 @@ def rename_quiz_files(folder_path, old_x, new_x, old_z=None, new_z=None, rename_
     # Mẫu regex để tìm các file dạng quiz_thumbnail_x_z
     pattern_thumbnail = re.compile(f"quiz_thumbnail_{old_x}_(.+)")
     
-    # Liệt kê tất cả các file trong thư mục
+    # Danh sách các thao tác đổi tên cần thực hiện
+    rename_operations = []
+    
+    # Nếu có start_y, thu thập và sắp xếp các file question trước
+    if start_y is not None:
+        for filename in os.listdir(folder_path):
+            match_question = pattern_question.match(filename)
+            if match_question:
+                old_y = int(match_question.group(1))
+                z = match_question.group(2)
+                question_files.append((old_y, filename, z))
+        
+        # Sắp xếp theo y cũ
+        question_files.sort(key=lambda x: x[0])
+    
+    # Thu thập tất cả các thao tác đổi tên trước khi thực hiện
     for filename in os.listdir(folder_path):
         # Kiểm tra file dạng quiz_x_question_y_z
         match_question = pattern_question.match(filename)
         if match_question:
-            y = match_question.group(1)  # Lấy giá trị y
+            old_y = int(match_question.group(1))  # Lấy giá trị y cũ
             z = match_question.group(2)  # Lấy phần z
+            
+            # Quyết định giá trị y mới
+            if start_y is not None:
+                # Tìm vị trí của file này trong danh sách đã sắp xếp
+                for index, (file_old_y, file_name, _) in enumerate(question_files):
+                    if file_name == filename:
+                        y = start_y + index
+                        break
+            else:
+                y = old_y  # Giữ nguyên y cũ
             
             # Lấy phần mở rộng của file
             _, file_extension = os.path.splitext(z)
@@ -48,14 +77,8 @@ def rename_quiz_files(folder_path, old_x, new_x, old_z=None, new_z=None, rename_
             # Tạo tên file mới
             new_filename = f"quiz_{new_x}_question_{y}_{z}"
             
-            # Đường dẫn đầy đủ cho file cũ và mới
-            old_path = os.path.join(folder_path, filename)
-            new_path = os.path.join(folder_path, new_filename)
-            
-            # Đổi tên file
-            os.rename(old_path, new_path)
-            print(f"Đã đổi tên: {filename} -> {new_filename}")
-            renamed_count += 1
+            # Thêm vào danh sách thao tác
+            rename_operations.append((filename, new_filename, "question"))
             continue
         
         # Kiểm tra file dạng quiz_thumbnail_x_z
@@ -77,14 +100,45 @@ def rename_quiz_files(folder_path, old_x, new_x, old_z=None, new_z=None, rename_
             # Tạo tên file mới
             new_filename = f"quiz_thumbnail_{new_x}_{z}"
             
-            # Đường dẫn đầy đủ cho file cũ và mới
-            old_path = os.path.join(folder_path, filename)
-            new_path = os.path.join(folder_path, new_filename)
-            
-            # Đổi tên file
-            os.rename(old_path, new_path)
-            print(f"Đã đổi tên thumbnail: {filename} -> {new_filename}")
+            # Thêm vào danh sách thao tác
+            rename_operations.append((filename, new_filename, "thumbnail"))
+    
+    # Thực hiện đổi tên với tên tạm thời trước để tránh xung đột
+    temp_suffix = f"_temp_{int(time.time())}"
+    
+    # Bước 1: Đổi tất cả file thành tên tạm thời
+    temp_renames = []
+    for old_filename, new_filename, file_type in rename_operations:
+        old_path = os.path.join(folder_path, old_filename)
+        temp_filename = old_filename + temp_suffix
+        temp_path = os.path.join(folder_path, temp_filename)
+        
+        try:
+            os.rename(old_path, temp_path)
+            temp_renames.append((temp_filename, new_filename, file_type))
+        except Exception as e:
+            print(f"Lỗi khi đổi tên tạm thời {old_filename}: {e}")
+    
+    # Bước 2: Đổi từ tên tạm thời thành tên cuối cùng
+    for temp_filename, new_filename, file_type in temp_renames:
+        temp_path = os.path.join(folder_path, temp_filename)
+        new_path = os.path.join(folder_path, new_filename)
+        
+        try:
+            os.rename(temp_path, new_path)
+            old_filename = temp_filename.replace(temp_suffix, "")
+            print(f"Đã đổi tên {file_type}: {old_filename} -> {new_filename}")
             renamed_count += 1
+        except Exception as e:
+            print(f"Lỗi khi đổi tên cuối cùng {temp_filename}: {e}")
+            # Khôi phục tên gốc nếu có lỗi
+            old_filename = temp_filename.replace(temp_suffix, "")
+            old_path = os.path.join(folder_path, old_filename)
+            try:
+                os.rename(temp_path, old_path)
+                print(f"Đã khôi phục tên gốc: {old_filename}")
+            except:
+                pass
     
     # Đổi tên thư mục nếu được yêu cầu
     if rename_folder:
@@ -173,6 +227,13 @@ if __name__ == "__main__":
     if analysis['z_values']:
         print(f"Một số giá trị z: {', '.join(analysis['z_values'])}")
     
+    # Nhập số bắt đầu cho y
+    start_y = None
+    if analysis['question_count'] > 0:
+        start_y_input = input(f"\nĐổi số thứ tự y? Nhập số bắt đầu (Enter để giữ nguyên): ")
+        if start_y_input.strip():
+            start_y = int(start_y_input)
+    
     # Quyết định cách xử lý z
     use_same_z = False
     old_z = None
@@ -207,7 +268,8 @@ if __name__ == "__main__":
         old_z, 
         new_z, 
         rename_folder, 
-        use_same_z
+        use_same_z,
+        start_y  # Thêm tham số start_y
     )
     
     print(f"\nĐã đổi tên {renamed_count} file")
